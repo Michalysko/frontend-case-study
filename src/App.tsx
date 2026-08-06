@@ -11,10 +11,119 @@ import {
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu.tsx';
 import './App.css';
+import { getEvent, getEventTickets } from '@/api/events';
+import type { EventData, EventTicketsData } from '@/types/api';
+import { useEffect, useState } from 'react';
+import { formatDateTime } from '@/utils/date';
 
 function App() {
+	const [event, setEvent] = useState<EventData | null>(null);
+	const [isEventLoading, setIsEventLoading] = useState(true);
+	const [eventError, setEventError] = useState<string | null>(null);
+	
+	const [eventTickets, setEventTickets] = useState<EventTicketsData | null>(null);
+	const [isTicketsLoading, setIsTicketsLoading] = useState(false);
+	const [ticketsError, setTicketsError] = useState<string | null>(null);
+
 	const isLoggedIn = false;
 	
+	useEffect(() => {
+		let ignoreResult = false;
+
+		getEvent()
+			.then((eventData) => {
+				if (!ignoreResult) {
+					setEvent(eventData);
+				}
+			})
+			.catch((error: unknown) => {
+				if (!ignoreResult) {
+					const message = 
+						error instanceof Error
+							? error.message
+							: 'Nastala neznámá chyba';
+					setEventError(message);
+				}
+			})
+			.finally(() => {
+				if (!ignoreResult) {
+					setIsEventLoading(false);
+				}
+			});
+		
+		return () => {
+			ignoreResult = true;
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!event) {
+			return;
+		}
+
+		let ignoreResult = false;
+
+		setIsTicketsLoading(true);
+		setTicketsError(null);
+
+		getEventTickets(event.eventId)
+			.then((ticketsData) => {
+				if (!ignoreResult) {
+					setEventTickets(ticketsData);
+					
+				}
+			})
+			.catch((error: unknown) => {
+				if (!ignoreResult) {
+					const message =
+						error instanceof Error
+							? error.message
+							: 'Nastala neznámá chyba';
+					
+					setTicketsError(message);
+				}
+			})
+			.finally(() => {
+				if (!ignoreResult) {
+					setIsTicketsLoading(false);
+				}
+			});
+		
+		return () => {
+			ignoreResult = true;
+		};
+	}, [event]);
+
+	if (isEventLoading) {
+		return <p className="p-6 text-center">Načítám informace o akci...</p>;
+	}
+
+	if (eventError) {
+		return (
+			<p className="p-6 text-center text-red-600">
+				{eventError}
+			</p>
+		);
+	}
+
+	if (!event) {
+		return (
+			<p className="p-6 text-center">
+				Informace o akci nejsou dostupné.
+			</p>
+		);
+	}
+
+	const maxSeatPlace = eventTickets
+		? Math.max(
+				0, 
+				...eventTickets.seatRows.flatMap((row) =>
+					row.seats.map((seat) => seat.place)
+				)
+		)
+		: 0;
+
+
 	return (
 		<div className="flex flex-col grow">
 			{/* header (wrapper) */}
@@ -26,7 +135,9 @@ function App() {
 						<div className="bg-zinc-100 rounded-md size-12" />
 					</div>
 					{/* app/author title/name placeholder */}
-					<div className="bg-zinc-100 rounded-md h-8 w-[200px]" />
+					<span className="text-center font-semibold text-zinc-900">
+						{event.namePub}
+					</span>
 					{/* user menu */}
 					<div className="max-w-[250px] w-full flex justify-end">
 						{
@@ -72,26 +183,105 @@ function App() {
 				{/* inner content */}
 				<div className="max-w-screen-lg m-auto p-4 flex items-start grow gap-3 w-full">
 					{/* seating card */}
-					<div className="bg-white rounded-md grow grid p-3 self-stretch shadow-sm" style={{
-						gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))',
-						gridAutoRows: '40px'
-					}}>
+					<section className="min-w-0 grow overflow-x-auto rounded-md bg-white p-4 shadow-sm">
+						<h2 className="mb-4 text-lg font-semibold text-zinc-900">
+							Vyberte si sedadla
+						</h2>
 						{/*	seating map */}
-						{
-							Array.from({ length: 100 }, (_, i) => (
-								<Seat key={i} />
-							))
-						}
-					</div>
-					
+						{isTicketsLoading && (
+							<p className="text-zinc-500">
+								Načítám sedadla...
+							</p>
+						)}
+						{ticketsError && (
+							<p className="text-red-600">
+								{ticketsError}
+							</p>
+						)}
+						{eventTickets && (
+							<div className="w-max min-w-full">
+								<div className="mb-6 ml-12 rounded-md bg-zinc-200 py-2 text-center text-sm font-medium text-zinc-600">
+									Pódium
+								</div>
+								<div className="flex flex-col gap-3">
+									{[...eventTickets.seatRows]
+										.sort((firstRow, secondRow) =>
+											firstRow.seatRow - secondRow.seatRow
+										)
+										.map((row) => (
+											<div 
+												key={row.seatRow}
+												className="grid items-center gap-2"
+												style={{
+													gridTemplateColumns: `40px repeat(${maxSeatPlace}, 40px)`
+												}}
+											>
+												<span className="text-sm font-medium text-zinc-500">
+													Řada {row.seatRow}
+												</span>
+
+												{Array.from(
+													{ length: maxSeatPlace },
+													(_, index) => {
+														const place = index + 1;
+														const seat = row.seats.find(
+															(item) => item.place === place
+														);
+														const ticketType = seat
+															? eventTickets.ticketTypes.find(
+																(item) =>
+																	item.id ===
+																	seat.ticketTypeId
+																)
+															: undefined;
+														return (
+															<div 
+																key={place}
+																className="flex size-10 items-center justify-center"
+															>
+																{seat && ticketType && (
+																	<Seat
+																		seat={seat}
+																		rowNumber={row.seatRow}
+																		ticketType={ticketType}
+																	/>	
+																)}
+															</div>
+														);
+													}
+												)}
+											</div>
+										))}
+									</div>
+								</div>
+						)}
+					</section>
 					{/* event info */}
 					<aside className="w-full max-w-sm bg-white rounded-md shadow-sm p-3 flex flex-col gap-2">
 						{/* event header image placeholder */}
-						<div className="bg-zinc-100 rounded-md h-32" />
+						<img 
+							src={event.headerImageUrl}
+							alt={event.namePub}
+							className="h-40 w-full rounded-md object-cover"
+						/>
 						{/* event name */}
-						<h1 className="text-xl text-zinc-900 font-semibold">[event-name]</h1>
+						<h1 className="text-xl text-zinc-900 font-semibold">{event.namePub}</h1>
+						<div className="text-sm text-zinc-600">
+							<p>
+								<span className="font-medium">Místo:</span>{' '}
+								{event.place}
+							</p>
+							<p>
+								<span className="font-medium">Začátek:</span>{' '}
+								{formatDateTime(event.dateFrom)}
+							</p>
+							<p>
+								<span className="font-medium">Konec:</span>{' '}
+								{formatDateTime(event.dateTo)}
+							</p>
+						</div>
 						{/* event description */}
-						<p className="text-sm text-zinc-500">[event-description]: Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam aliquid asperiores beatae deserunt dicta dolorem eius eos fuga laborum nisi officia pariatur quidem repellendus, reprehenderit sapiente, sed tenetur vel voluptatibus?</p>
+						<p className="text-sm text-zinc-500">{event.description}</p>
 						{/* add to calendar button */}
 						<Button variant="secondary" disabled>
 							Add to calendar
