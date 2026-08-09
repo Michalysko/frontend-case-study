@@ -4,10 +4,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils.ts';
 import React from 'react';
 
-interface SeatProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	seat: SeatData;
-	rowNumber: number;
-	ticketType: TicketType;
+interface SeatProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+		seat: SeatData;
+		rowNumber: number;
+		ticketType: TicketType;
+		currencyIso: string;
+		isInCart: boolean;
+		onToggleCart: () => void;
 }
 
 export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
@@ -16,13 +20,20 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 			seat,
 			rowNumber,
 			ticketType,
+			currencyIso,
+			isInCart,
+			onToggleCart,
 			className,
 			...buttonProps
 		},
 		ref
 	) => {
-		const isInCart = false;
-	
+
+		const formattedPrice = new Intl.NumberFormat('cs-CZ', {
+			style: 'currency',
+			currency: currencyIso
+		}).format(ticketType.price);
+
 		return (
 			<Popover>
 				<PopoverTrigger asChild>
@@ -31,11 +42,15 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 						type="button"
 						className={cn(
 							'flex size-8 items-center justify-center rounded-full',
-							'bg-zinc-100 text-xs font-medium text-zinc-600',
-							'transition-colors hover:bg-zinc-200',
+							'text-xs font-medium transition-colors',
+							isInCart
+								? 'bg-violet-600 text-white hover:bg-violet-700'
+								: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200',
 							className
 						)}
-						aria-label={`Řada ${rowNumber}, sedadlo ${seat.place}`}
+						aria-label={`Řada ${rowNumber}, sedadlo ${seat.place}${
+							isInCart ? ', vybráno' : ''
+						}`}
 						{...buttonProps}
 					>
 						{seat.place}
@@ -51,20 +66,25 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 								{ticketType.name}
 							</p>
 							<p className="text-sm font-medium">
-								{ticketType.price}
+								{formattedPrice}
 							</p>
 						</div>
 
 						{isInCart ? (
 							<Button
-								disabled
+								type="button"
 								variant="destructive"
 								size="sm"
+								onClick={onToggleCart}
 							>
 								Odebrat z košíku
 							</Button>
 						) : (
-							<Button disabled size="sm">
+							<Button 
+								type="button"
+								size="sm"
+								onClick={onToggleCart}
+							>	
 								Přidat do košíku
 							</Button>
 						)}

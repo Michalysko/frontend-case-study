@@ -30,3 +30,38 @@ export interface EventTicketsData {
     ticketTypes: TicketType[];
     seatRows: SeatRow[];
 }
+
+export interface UserData {
+    email: string;
+    firstName: string;
+    lastName: string;
+}
+
+export interface LoginRequest {
+    email: string;
+    password: string;
+}
+
+export interface LoginResponse {
+    message: string;
+    user: UserData;
+}
+
+export interface OrderTicket {
+    ticketTypeId: string;
+    seatId: string;
+}
+
+export interface OrderRequest {
+    eventId: string;
+    tickets: OrderTicket[];
+    user: UserData;
+}
+
+export interface OrderResponse {
+    message: string;
+    orderId: string;
+    tickets: unknown[];
+    user: UserData;
+    totalAmount: number;
+}

@@ -13,8 +13,9 @@ import {
 import './App.css';
 import { getEvent, getEventTickets } from '@/api/events';
 import type { EventData, EventTicketsData } from '@/types/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { formatDateTime } from '@/utils/date';
+import { cartReducer } from '@/state/cart';
 
 function App() {
 	const [event, setEvent] = useState<EventData | null>(null);
@@ -24,6 +25,13 @@ function App() {
 	const [eventTickets, setEventTickets] = useState<EventTicketsData | null>(null);
 	const [isTicketsLoading, setIsTicketsLoading] = useState(false);
 	const [ticketsError, setTicketsError] = useState<string | null>(null);
+
+	const [cart, dispatchCart] = useReducer(cartReducer, []);
+	const ticketCount = cart.length;
+	const totalPrice = cart.reduce(
+		(total, item) => total + item.ticketType.price,
+		0
+	);
 
 	const isLoggedIn = false;
 	
@@ -179,7 +187,7 @@ function App() {
 			</nav>
 			
 			{/* main body (wrapper) */}
-			<main className="grow flex flex-col justify-center">
+			<main className="grow flex flex-col justify-center pb-28">
 				{/* inner content */}
 				<div className="max-w-screen-lg m-auto p-4 flex items-start grow gap-3 w-full">
 					{/* seating card */}
@@ -244,6 +252,20 @@ function App() {
 																		seat={seat}
 																		rowNumber={row.seatRow}
 																		ticketType={ticketType}
+																		currencyIso={event.currencyIso}
+																		isInCart={cart.some(
+																			(item) => item.seat.seatId === seat.seatId
+																		)}
+																		onToggleCart={() => {
+																			dispatchCart({
+																				type: 'toggle',
+																				item: {
+																					seat, 
+																					rowNumber: row.seatRow,
+																					ticketType
+																				}
+																			});
+																		}}
 																	/>	
 																)}
 															</div>
@@ -291,18 +313,29 @@ function App() {
 			</main>
 			
 			{/* bottom cart affix (wrapper) */}
-			<nav className="sticky bottom-0 left-0 right-0 bg-white border-t border-zinc-200 flex justify-center">
+			<nav className="fixed inset-x-0 bottom-0 z-50 flex justify-center border-t border-zinc-200 bg-white text-zinc-900">
 				{/* inner content */}
 				<div className="max-w-screen-lg p-6 flex justify-between items-center gap-4 grow">
 					{/* total in cart state */}
 					<div className="flex flex-col">
-						<span>Total for [?] tickets</span>
-						<span className="text-2xl font-semibold">[?] CZK</span>
+						<span>
+							Celkem za {ticketCount} vstupenek
+						</span>
+							
+						<span className="text-2xl font-semibold">
+							{new Intl.NumberFormat('cs-CZ', {
+								style: 'currency',
+								currency: event.currencyIso
+							}).format(totalPrice)}
+						</span>
 					</div>
 					
 					{/* checkout button */}
-					<Button disabled variant="default">
-						Checkout now
+					<Button
+						disabled={cart.length === 0}
+						variant="default"
+					>
+						Koupit vstupenky
 					</Button>
 				</div>
 			</nav>
