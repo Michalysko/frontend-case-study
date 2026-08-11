@@ -11,7 +11,7 @@ export async function createOrder(
     const response = await fetch(`${API_URL}/order`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'applycation/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(order)
     });

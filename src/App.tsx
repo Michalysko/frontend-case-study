@@ -12,10 +12,21 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import './App.css';
 import { getEvent, getEventTickets } from '@/api/events';
-import type { EventData, EventTicketsData } from '@/types/api';
+import type { 
+	EventData, 
+	EventTicketsData,
+	LoginRequest, 
+	OrderResponse, 
+	UserData,
+} from '@/types/api';
 import { useEffect, useReducer, useState } from 'react';
 import { formatDateTime } from '@/utils/date';
 import { cartReducer } from '@/state/cart';
+import { GuestCheckoutForm } from '@/components/GuestCheckoutForm';
+import { createOrder } from '@/api/orders';
+import { LoginForm } from './components/LoginForm';
+import { login } from './api/auth';
+import { createCalendarContent } from './utils/calendar';
 
 function App() {
 	const [event, setEvent] = useState<EventData | null>(null);
@@ -27,13 +38,22 @@ function App() {
 	const [ticketsError, setTicketsError] = useState<string | null>(null);
 
 	const [cart, dispatchCart] = useReducer(cartReducer, []);
+	const [purchasedSeatIds, setPurchasedSeatIds] = useState<string[]>([])
 	const ticketCount = cart.length;
 	const totalPrice = cart.reduce(
 		(total, item) => total + item.ticketType.price,
 		0
 	);
 
-	const isLoggedIn = false;
+	const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+	const [isOrderSubmitting, setIsOrderSubmitting] = useState(false);
+	const [orderError, setOrderError] = useState<string | null>(null);
+	const [orderResult, setOrderResult] = useState<OrderResponse | null>(null);
+
+	const [loggedInUser, setLoggedInUser] = useState<UserData | null>(null);
+	const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
+	const [loginError, setLoginError] = useState<string | null>(null);
+	const [checkoutStep, setCheckoutStep] = useState<'login' | 'guest'>('login');
 	
 	useEffect(() => {
 		let ignoreResult = false;
@@ -102,6 +122,86 @@ function App() {
 		};
 	}, [event]);
 
+	async function handleOrderSubmit(user: UserData) {
+		if (!event || cart.length === 0) {
+			return;
+		}
+
+		setIsOrderSubmitting(true);
+		setOrderError(null);
+
+		try {
+			const result = await createOrder({
+				eventId: event.eventId,
+				tickets: cart.map((item) => ({
+					ticketTypeId: item.ticketType.id,
+					seatId: item.seat.seatId
+				})),
+				user
+			});
+
+			setOrderResult(result);
+			setPurchasedSeatIds((currentIds) => {
+				const newIds = cart.map((item) => item.seat.seatId);
+				return [...new Set([...currentIds, ...newIds])];
+			});
+			dispatchCart({ type: 'clear' });
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error
+					? error.message
+					: 'Nastala neznámá chyba';
+
+			setOrderError(message);
+		} finally {
+			setIsOrderSubmitting(false);
+		}
+	}
+
+	async function handleLoginSubmit(
+		credentials: LoginRequest
+	) {
+		setIsLoginSubmitting(true);
+		setLoginError(null);
+
+		try {
+			const result = await login(credentials);
+
+			setLoggedInUser(result.user);
+
+			await handleOrderSubmit(result.user);
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error
+					? error.message
+					: 'Nastala neznámá chyba';
+			setLoginError(message);
+		} finally {
+			setIsLoginSubmitting(false);
+		}
+	}
+
+	function handleAddToCalendar() {
+		if (!event) {
+			return;
+		}
+
+		const content = createCalendarContent(event);
+
+		const file = new Blob([content], {
+			type: 'text/calendar;charset=utf-8'
+		});
+
+		const fileUrl = URL.createObjectURL(file);
+		const link = document.createElement('a');
+
+		link.href = fileUrl;
+		link.download = `${event.namePub}.ics`;
+		link.click();
+
+		URL.revokeObjectURL(fileUrl);
+	}
+
 	if (isEventLoading) {
 		return <p className="p-6 text-center">Načítám informace o akci...</p>;
 	}
@@ -149,25 +249,36 @@ function App() {
 					{/* user menu */}
 					<div className="max-w-[250px] w-full flex justify-end">
 						{
-							isLoggedIn ? (
+							loggedInUser ? (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
 										<Button variant="ghost">
 											<div className="flex items-center gap-2">
 												<Avatar>
-													<AvatarImage src={`https://source.boringavatars.com/marble/120/<user-email>?colors=25106C,7F46DB`} />
-													<AvatarFallback>CN</AvatarFallback>
+													<AvatarImage src={`https://source.boringavatars.com/marble/120/${encodeURIComponent(
+														loggedInUser.email
+													)}?colors=25106C,7F46DB`} />
+													<AvatarFallback>
+														{loggedInUser.firstName.charAt(0)}
+														{loggedInUser.lastName.charAt(0)}
+													</AvatarFallback>
 												</Avatar>
 												
 												<div className="flex flex-col text-left">
-													<span className="text-sm font-medium">John Doe</span>
-													<span className="text-xs text-zinc-500">john.doe@nfctron.com</span>
+													<span className="text-sm font-medium">
+														{loggedInUser.firstName} {loggedInUser.lastName}
+													</span>
+													<span className="text-xs text-zinc-500">
+														{loggedInUser.email}
+													</span>
 												</div>
 											</div>
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent className="w-[250px]">
-										<DropdownMenuLabel>John Doe</DropdownMenuLabel>
+										<DropdownMenuLabel>
+											{loggedInUser.firstName} {loggedInUser.lastName}
+										</DropdownMenuLabel>
 										<DropdownMenuSeparator />
 										<DropdownMenuGroup>
 											<DropdownMenuItem disabled>
@@ -253,6 +364,7 @@ function App() {
 																		rowNumber={row.seatRow}
 																		ticketType={ticketType}
 																		currencyIso={event.currencyIso}
+																		isPurchased={purchasedSeatIds.includes(seat.seatId)}
 																		isInCart={cart.some(
 																			(item) => item.seat.seatId === seat.seatId
 																		)}
@@ -305,8 +417,12 @@ function App() {
 						{/* event description */}
 						<p className="text-sm text-zinc-500">{event.description}</p>
 						{/* add to calendar button */}
-						<Button variant="secondary" disabled>
-							Add to calendar
+						<Button 
+							type='button'
+							variant="secondary"
+							onClick={handleAddToCalendar} 
+						>
+							Přidat do kalendáře
 						</Button>
 					</aside>
 				</div>
@@ -334,11 +450,85 @@ function App() {
 					<Button
 						disabled={cart.length === 0}
 						variant="default"
+						onClick={() => {
+							setOrderError(null);
+							setOrderResult(null);
+							setLoginError(null);
+							setCheckoutStep('login');
+							setIsCheckoutOpen(true);
+
+							if (loggedInUser) {
+								void handleOrderSubmit(loggedInUser);
+							}
+						}}
 					>
 						Koupit vstupenky
 					</Button>
 				</div>
 			</nav>
+			{isCheckoutOpen && (
+				<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+					<div 
+						role="dialog"
+						aria-model="true"
+						aria-label="Dokončení objednávky"
+						className="w-full max-w-md rounded-lg bg-white p-6 text-zinc-900 shadow-xl"
+					>
+						{orderResult ? (
+							<div className="flex flex-col gap-4">
+								<div>
+									<h2 className="text-xl font-semibold text-green-700">
+										Objednávka byla vytvořena
+									</h2>
+									<p className="mt-2 text-sm text-zinc-600">
+										Číslo objednávky: {orderResult.orderId}
+									</p>
+								</div>
+								<Button
+									type="button"
+									onClick={() => setIsCheckoutOpen(false)}
+								>
+									Zavřít
+								</Button>
+							</div>
+						) : (
+							<div className="flex flex-col gap-4">
+								{orderError && (
+									<p 
+										role="alert"
+										className="rounded-mg bg-red-50 p-3 text-sm text-red-700"
+									>
+										{orderError}
+									</p>
+								)}
+
+								{checkoutStep === 'login' && !loggedInUser ? (
+									<LoginForm
+										isSubmitting={isLoginSubmitting}
+										error={loginError}
+										onSubmit={handleLoginSubmit}
+										onContinueAsGuest={() => {
+											setLoginError(null);
+											setCheckoutStep('guest');
+										}}
+										onCancel={() => setIsCheckoutOpen(false)}
+									/>
+								) : loggedInUser && isOrderSubmitting ? (
+									<p className='py-8 text-center text-zinc-600'>
+										Vytvářím objednávku...
+									</p>
+								) : (
+									<GuestCheckoutForm
+										isSubmitting={isOrderSubmitting}
+										onCancel={() => setIsCheckoutOpen(false)}
+										onSubmit={handleOrderSubmit}
+									/>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

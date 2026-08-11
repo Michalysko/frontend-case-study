@@ -11,6 +11,7 @@ interface SeatProps
 		ticketType: TicketType;
 		currencyIso: string;
 		isInCart: boolean;
+		isPurchased: boolean;
 		onToggleCart: () => void;
 }
 
@@ -22,6 +23,7 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 			ticketType,
 			currencyIso,
 			isInCart,
+			isPurchased,
 			onToggleCart,
 			className,
 			...buttonProps
@@ -43,15 +45,22 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 						className={cn(
 							'flex size-8 items-center justify-center rounded-full',
 							'text-xs font-medium transition-colors',
-							isInCart
-								? 'bg-violet-600 text-white hover:bg-violet-700'
-								: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200',
+							isPurchased
+								? 'cursor-not-allowed bg-emerald-600 text-white opacity-70'
+								: isInCart
+									? 'bg-violet-600 text-white hover:bg-violet-700'
+									: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200',
 							className
 						)}
 						aria-label={`Řada ${rowNumber}, sedadlo ${seat.place}${
-							isInCart ? ', vybráno' : ''
+							isPurchased
+								? ', zakoupeno'
+								: isInCart 
+									? ', vybráno' 
+									: ''
 						}`}
 						{...buttonProps}
+						disabled={isPurchased}
 					>
 						{seat.place}
 					</button>
