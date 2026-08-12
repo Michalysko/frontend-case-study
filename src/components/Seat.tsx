@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { cn } from '@/lib/utils.ts';
 import React from 'react';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface SeatProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -30,8 +31,9 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 		},
 		ref
 	) => {
+		const { locale, t } = useI18n();
 
-		const formattedPrice = new Intl.NumberFormat('cs-CZ', {
+		const formattedPrice = new Intl.NumberFormat(locale, {
 			style: 'currency',
 			currency: currencyIso
 		}).format(ticketType.price);
@@ -52,11 +54,11 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 									: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200',
 							className
 						)}
-						aria-label={`Řada ${rowNumber}, sedadlo ${seat.place}${
+						aria-label={`${t('row')} ${rowNumber}, ${t('seat')} ${seat.place}${
 							isPurchased
-								? ', zakoupeno'
+								? `, ${t('purchased')}`
 								: isInCart 
-									? ', vybráno' 
+									? `, ${t('selected')}` 
 									: ''
 						}`}
 						{...buttonProps}
@@ -69,7 +71,7 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 					<div className="flex flex-col gap-3">
 						<div>
 							<p className="font-semibold">
-								Řada {rowNumber}, sedadlo {seat.place}
+								{t('row')} {rowNumber}, {t('seat')} {seat.place}
 							</p>
 							<p className="text-sm text-zinc-500">
 								{ticketType.name}
@@ -86,7 +88,7 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 								size="sm"
 								onClick={onToggleCart}
 							>
-								Odebrat z košíku
+								{t('removeFromCart')}
 							</Button>
 						) : (
 							<Button 
@@ -94,7 +96,7 @@ export const Seat = React.forwardRef<HTMLButtonElement, SeatProps>(
 								size="sm"
 								onClick={onToggleCart}
 							>	
-								Přidat do košíku
+								{t('addToCart')}
 							</Button>
 						)}
 					</div>

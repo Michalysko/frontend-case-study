@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import type { LoginRequest } from '@/types/api';
 import { useState, type FormEvent } from 'react';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface LoginFormProps {
     isSubmitting: boolean;
@@ -17,6 +18,7 @@ export function LoginForm({
     onContinueAsGuest,
     onCancel
 }: LoginFormProps) {
+	const { t } = useI18n();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -36,10 +38,10 @@ export function LoginForm({
         >
             <div>
                 <h2 className='text-xl font-semibold text-zinc-900'>
-                    Přihlášení
+                    {t('login')}
                 </h2>
                 <p className='text-sm text-zinc-500'>
-                    Přihlaste se, nebo pokračujte v objednávce jako host.
+                    {t('loginHelp')}
                 </p>
             </div>
 
@@ -53,7 +55,7 @@ export function LoginForm({
             )}
             
             <label className='flex flex-col gap-1 text-sm text-zinc-700'>
-                E-mail
+                {t('email')}
                 <input 
                     required
                     type='email'
@@ -66,7 +68,7 @@ export function LoginForm({
                 />
             </label>
             <label className='flex flex-col gap-1 text-sm text-zinc-700'>
-                Heslo
+                {t('password')}
                 <input 
                     required
                     type='password'
@@ -80,8 +82,8 @@ export function LoginForm({
             </label>
 
             <p className='rounded-md bg-zinc-50 p-3 text-xs text-zinc-600'>
-                Testovací účet: frontend@nfctron.com<br/>
-                Heslo: Nfctron2025
+                {t('testAccount')}: frontend@nfctron.com<br/>
+                {t('password')}: Nfctron2025
             </p>
 
             <div className='flex flex-col gap-2'>
@@ -90,8 +92,8 @@ export function LoginForm({
                     disabled={isSubmitting}
                 >
                     {isSubmitting
-                        ? 'Přihlašuji...'
-                        : 'Přihlásit se'}
+                        ? t('signingIn')
+                        : t('signIn')}
                 </Button>
                 <Button
                     type='button'
@@ -99,7 +101,7 @@ export function LoginForm({
                     disabled={isSubmitting}
                     onClick={onContinueAsGuest}
                 >
-                    Pokračovat jako host
+                    {t('continueGuest')}
                 </Button>
                 <Button
                     type='button'
@@ -107,7 +109,7 @@ export function LoginForm({
                     disabled={isSubmitting}
                     onClick={onCancel}
                 >
-                    Zrušit
+                    {t('cancel')}
                 </Button>
             </div>
         </form>

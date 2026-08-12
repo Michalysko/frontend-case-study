@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import type { UserData } from '@/types/api';
 import { useState, type FormEvent } from 'react';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface GuestCheckoutFormProps {
     isSubmitting: boolean;
@@ -13,6 +14,7 @@ export function GuestCheckoutForm({
     onCancel,
     onSubmit
 }: GuestCheckoutFormProps) {
+	const { t } = useI18n();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
@@ -29,21 +31,21 @@ export function GuestCheckoutForm({
 
     return (
         <form 
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-4 text-zinc-900"
             onSubmit={handleSubmit}
         >
             <div>
                 <h2 className="text-xl font-semibold text-zinc-900">
-                    Kontaktní údaje
+                    {t('contactDetails')}
                 </h2>
 
                 <p className="text-sm text-zinc-500">
-                    Vyplňte údaje potřebné pro vytvoření objednávky.
+                    {t('contactHelp')}
                 </p>
             </div>
 
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-                Jméno
+                {t('firstName')}
                 <input 
                     required
                     type="text"
@@ -52,11 +54,11 @@ export function GuestCheckoutForm({
                     onChange={(event) =>
                         setFirstName(event.target.value)
                     }
-                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                 />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-                Příjmení
+                {t('lastName')}
                 <input 
                     required
                     type="text"
@@ -65,11 +67,11 @@ export function GuestCheckoutForm({
                     onChange={(event) =>
                         setLastName(event.target.value)
                     }
-                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                 />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-                E-mail
+                {t('email')}
                 <input 
                     required
                     type="email"
@@ -78,7 +80,7 @@ export function GuestCheckoutForm({
                     onChange={(event) =>
                         setEmail(event.target.value)
                     }
-                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                 />
             </label>
             <div className="flex justify-end gap-2">
@@ -88,15 +90,15 @@ export function GuestCheckoutForm({
                     disabled={isSubmitting}
                     onClick={onCancel}
                 >
-                    Zrušit
+                    {t('cancel')}
                 </Button>
                 <Button
                     type="submit"
                     disabled={isSubmitting}
                 >
                     {isSubmitting
-                        ? 'Vytvářím objednávku...'
-                        : 'Dokončit objednávku'}
+                        ? t('creatingOrder')
+                        : t('finishOrder')}
                 </Button>
             </div>
         </form>

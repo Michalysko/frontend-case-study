@@ -27,8 +27,10 @@ import { createOrder } from '@/api/orders';
 import { LoginForm } from './components/LoginForm';
 import { login } from './api/auth';
 import { createCalendarContent } from './utils/calendar';
+import { useI18n } from '@/i18n/I18nContext';
 
 function App() {
+	const { language, locale, setLanguage, t } = useI18n();
 	const [event, setEvent] = useState<EventData | null>(null);
 	const [isEventLoading, setIsEventLoading] = useState(true);
 	const [eventError, setEventError] = useState<string | null>(null);
@@ -203,7 +205,7 @@ function App() {
 	}
 
 	if (isEventLoading) {
-		return <p className="p-6 text-center">Načítám informace o akci...</p>;
+		return <p className="p-6 text-center">{t('loadingEvent')}</p>;
 	}
 
 	if (eventError) {
@@ -217,7 +219,7 @@ function App() {
 	if (!event) {
 		return (
 			<p className="p-6 text-center">
-				Informace o akci nejsou dostupné.
+				{t('unavailableEvent')}
 			</p>
 		);
 	}
@@ -237,13 +239,15 @@ function App() {
 			{/* header (wrapper) */}
 			<nav className="sticky top-0 left-0 right-0 bg-white border-b border-zinc-200 flex justify-center">
 				{/* inner content */}
-				<div className="max-w-screen-lg p-4 grow flex items-center justify-between gap-3">
+				<div className="flex w-full max-w-screen-lg items-center justify-between gap-3 p-4">
 					{/* application/author image/logo placeholder */}
-					<div className="max-w-[250px] w-full flex">
+					<div className="flex w-full max-w-[250px] gap-1">
 						<div className="bg-zinc-100 rounded-md size-12" />
+						<Button type="button" size="sm" variant={language === 'cs' ? 'default' : 'ghost'} onClick={() => setLanguage('cs')}>CS</Button>
+						<Button type="button" size="sm" variant={language === 'en' ? 'default' : 'ghost'} onClick={() => setLanguage('en')}>EN</Button>
 					</div>
 					{/* app/author title/name placeholder */}
-					<span className="text-center font-semibold text-zinc-900">
+					<span className="line-clamp-2 text-center text-sm font-semibold text-zinc-900 sm:text-base">
 						{event.namePub}
 					</span>
 					{/* user menu */}
@@ -282,14 +286,14 @@ function App() {
 										<DropdownMenuSeparator />
 										<DropdownMenuGroup>
 											<DropdownMenuItem disabled>
-												Logout
+												{t('logout')}
 											</DropdownMenuItem>
 										</DropdownMenuGroup>
 									</DropdownMenuContent>
 								</DropdownMenu>
 							) : (
 								<Button disabled variant="secondary">
-									Login or register
+									{t('loginOrRegister')}
 								</Button>
 							)
 						}
@@ -300,16 +304,16 @@ function App() {
 			{/* main body (wrapper) */}
 			<main className="grow flex flex-col justify-center pb-28">
 				{/* inner content */}
-				<div className="max-w-screen-lg m-auto p-4 flex items-start grow gap-3 w-full">
+				<div className="m-auto flex w-full max-w-screen-lg grow flex-col items-stretch gap-3 p-4 lg:flex-row lg:items-start">
 					{/* seating card */}
 					<section className="min-w-0 grow overflow-x-auto rounded-md bg-white p-4 shadow-sm">
 						<h2 className="mb-4 text-lg font-semibold text-zinc-900">
-							Vyberte si sedadla
+							{t('chooseSeats')}
 						</h2>
 						{/*	seating map */}
 						{isTicketsLoading && (
 							<p className="text-zinc-500">
-								Načítám sedadla...
+								{t('loadingSeats')}
 							</p>
 						)}
 						{ticketsError && (
@@ -320,7 +324,7 @@ function App() {
 						{eventTickets && (
 							<div className="w-max min-w-full">
 								<div className="mb-6 ml-12 rounded-md bg-zinc-200 py-2 text-center text-sm font-medium text-zinc-600">
-									Pódium
+									{t('stage')}
 								</div>
 								<div className="flex flex-col gap-3">
 									{[...eventTickets.seatRows]
@@ -336,7 +340,7 @@ function App() {
 												}}
 											>
 												<span className="text-sm font-medium text-zinc-500">
-													Řada {row.seatRow}
+											{t('row')} {row.seatRow}
 												</span>
 
 												{Array.from(
@@ -391,7 +395,7 @@ function App() {
 						)}
 					</section>
 					{/* event info */}
-					<aside className="w-full max-w-sm bg-white rounded-md shadow-sm p-3 flex flex-col gap-2">
+					<aside className="flex w-full flex-col gap-2 rounded-md bg-white p-3 shadow-sm lg:max-w-sm">
 						{/* event header image placeholder */}
 						<img 
 							src={event.headerImageUrl}
@@ -402,16 +406,16 @@ function App() {
 						<h1 className="text-xl text-zinc-900 font-semibold">{event.namePub}</h1>
 						<div className="text-sm text-zinc-600">
 							<p>
-								<span className="font-medium">Místo:</span>{' '}
+								<span className="font-medium">{t('place')}:</span>{' '}
 								{event.place}
 							</p>
 							<p>
-								<span className="font-medium">Začátek:</span>{' '}
-								{formatDateTime(event.dateFrom)}
+								<span className="font-medium">{t('start')}:</span>{' '}
+								{formatDateTime(event.dateFrom, locale)}
 							</p>
 							<p>
-								<span className="font-medium">Konec:</span>{' '}
-								{formatDateTime(event.dateTo)}
+								<span className="font-medium">{t('end')}:</span>{' '}
+								{formatDateTime(event.dateTo, locale)}
 							</p>
 						</div>
 						{/* event description */}
@@ -422,7 +426,7 @@ function App() {
 							variant="secondary"
 							onClick={handleAddToCalendar} 
 						>
-							Přidat do kalendáře
+							{t('addCalendar')}
 						</Button>
 					</aside>
 				</div>
@@ -431,15 +435,15 @@ function App() {
 			{/* bottom cart affix (wrapper) */}
 			<nav className="fixed inset-x-0 bottom-0 z-50 flex justify-center border-t border-zinc-200 bg-white text-zinc-900">
 				{/* inner content */}
-				<div className="max-w-screen-lg p-6 flex justify-between items-center gap-4 grow">
+				<div className="flex w-full max-w-screen-lg items-center justify-between gap-3 p-4 sm:p-6">
 					{/* total in cart state */}
 					<div className="flex flex-col">
 						<span>
-							Celkem za {ticketCount} vstupenek
+							{t('cartTotal', { count: ticketCount })}
 						</span>
 							
-						<span className="text-2xl font-semibold">
-							{new Intl.NumberFormat('cs-CZ', {
+						<span className="text-xl font-semibold sm:text-2xl">
+							{new Intl.NumberFormat(locale, {
 								style: 'currency',
 								currency: event.currencyIso
 							}).format(totalPrice)}
@@ -462,7 +466,7 @@ function App() {
 							}
 						}}
 					>
-						Koupit vstupenky
+						{t('buyTickets')}
 					</Button>
 				</div>
 			</nav>
@@ -470,25 +474,25 @@ function App() {
 				<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
 					<div 
 						role="dialog"
-						aria-model="true"
-						aria-label="Dokončení objednávky"
+						aria-modal="true"
+						aria-label={t('completeOrder')}
 						className="w-full max-w-md rounded-lg bg-white p-6 text-zinc-900 shadow-xl"
 					>
 						{orderResult ? (
 							<div className="flex flex-col gap-4">
 								<div>
 									<h2 className="text-xl font-semibold text-green-700">
-										Objednávka byla vytvořena
+										{t('orderCreated')}
 									</h2>
 									<p className="mt-2 text-sm text-zinc-600">
-										Číslo objednávky: {orderResult.orderId}
+										{t('orderNumber')}: {orderResult.orderId}
 									</p>
 								</div>
 								<Button
 									type="button"
 									onClick={() => setIsCheckoutOpen(false)}
 								>
-									Zavřít
+									{t('close')}
 								</Button>
 							</div>
 						) : (
@@ -515,7 +519,7 @@ function App() {
 									/>
 								) : loggedInUser && isOrderSubmitting ? (
 									<p className='py-8 text-center text-zinc-600'>
-										Vytvářím objednávku...
+										{t('creatingOrder')}
 									</p>
 								) : (
 									<GuestCheckoutForm
