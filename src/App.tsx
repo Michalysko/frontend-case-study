@@ -237,7 +237,7 @@ function App() {
 	return (
 		<div className="flex flex-col grow">
 			{/* header (wrapper) */}
-			<nav className="sticky top-0 left-0 right-0 bg-white border-b border-zinc-200 flex justify-center">
+			<nav className="sticky top-0 left-0 right-0 bg-white text-zinc-900 border-b border-zinc-200 flex justify-center">
 				{/* inner content */}
 				<div className="flex w-full max-w-screen-lg items-center justify-between gap-3 p-4">
 					{/* application/author image/logo placeholder */}
